@@ -68,7 +68,8 @@ def get_speaker_info(data, spklist):
     features2spk = {}
     with open(os.path.join(data, "feats.scp"), "r") as f:
         for line in f.readlines():
-            (key, rxfile) = line.decode().split(' ')
+            #(key, rxfile) = line.decode().split(' ')
+            (key, rxfile) = line.split(' ')
             spk = utt2spk[key]
             if spk not in spk2features:
                 spk2features[spk] = []
@@ -113,7 +114,8 @@ def get_aux_speaker_info(data, aux_data, spklist):
     for name in aux_data:
         with open(os.path.join(aux_data[name], "feats.scp"), "r") as f:
             for line in f.readlines():
-                (key, rxfile) = line.decode().split(' ')
+                #(key, rxfile) = line.decode().split(' ')
+                (key, rxfile) = line.split(' ')
                 if key not in aux_utt2features:
                     aux_utt2features[key] = {}
                 aux_utt2features[key][name] = key + ' ' + rxfile
@@ -122,7 +124,8 @@ def get_aux_speaker_info(data, aux_data, spklist):
     features2spk = {}
     with open(os.path.join(data, "feats.scp"), "r") as f:
         for line in f.readlines():
-            (key, rxfile) = line.decode().split(' ')
+            #(key, rxfile) = line.decode().split(' ')
+            (key, rxfile) = line.split(' ')
             spk = utt2spk[key]
             if spk not in spk2features:
                 spk2features[spk] = []
@@ -286,8 +289,10 @@ def batch_random(stop_event,
     #
     # The re-seed is necessary if numpy.random is used
     # You can use os.urandom to generate the `random` seed.
-    rd = random.Random(os.urandom(4))
-    rd.jumpahead(seed)
+    urand=os.urandom(4)
+    #print('=============urand===================', urand, seed)
+    rd = random.Random(urand)
+    #rd.jumpahead(seed)
 
     feature_reader = FeatureReader(data)
     speakers = list(spk2features.keys())
@@ -296,12 +301,13 @@ def batch_random(stop_event,
             "[Warning] The number of available speakers are less than the required speaker. Some speakers will be duplicated.")
         speakers = speakers * (int(num_speakers / num_total_speakers) + 1)
 
-    total_num_frames = np.sum(spk2num_frames.values())
+    total_num_frames = np.sum(list(spk2num_frames.values()))
     spk_sample_region = []
     current_region = 0
     for spk in speakers:
         current_region += spk2num_frames[spk]
         spk_sample_region.append(current_region)
+    #print("===============%s %s" % (total_num_frames, current_region))
     assert total_num_frames == current_region
 
     spk2utt_sample_region = {}
@@ -455,6 +461,21 @@ class KaldiDataRandomQueue(object):
     def start(self):
         """Start processes to load features
         """
+        #batch_random(self.stop_event,
+        #                                                     self.queue,
+        #                                                     self.data,
+        #                                                     self.spk2features,
+        #                                                     self.spk2num_frames,
+        #                                                     self.utt2num_frames,
+        #                                                     self.num_total_speakers,
+        #                                                     self.num_speakers,
+        #                                                     self.num_segments,
+        #                                                     self.min_len,
+        #                                                     self.max_len,
+        #                                                     self.shuffle,
+        #                                                     0,
+        #                                                     self.sample_with_prob)
+
         self.processes = [Process(target=batch_random, args=(self.stop_event,
                                                              self.queue,
                                                              self.data,
@@ -520,8 +541,10 @@ def batch_sequence(stop_event,
         seed: The number is used to generate a random seed
     """
     # Read the comment in batch_random
-    rd = random.Random(os.urandom(4))
-    rd.jumpahead(seed)
+    urand=os.urandom(4)
+    #print('=============urand===================', urand)
+    rd = random.Random(urand)
+    #rd.jumpahead(seed)
 
     feature_reader = FeatureReader(data)
 
@@ -590,7 +613,7 @@ class KaldiDataSeqQueue(object):
         if shuffle:
             random.shuffle(self.feature_list)
         # Split the features to N sub-list. The lists are used in each process.
-        num_sub_features = len(self.feature_list) / num_parallel
+        num_sub_features = int(len(self.feature_list) / num_parallel)
         for i in range(num_parallel):
             if i == num_parallel - 1:
                 self.sub_feature_list.append(self.feature_list[i * num_sub_features:])
@@ -695,7 +718,7 @@ def multi_batch_random(stop_event,
     # The re-seed is necessary if numpy.random is used
     # You can use os.urandom to generate the `random` seed.
     rd = random.Random(os.urandom(4))
-    rd.jumpahead(seed)
+    #rd.jumpahead(seed)
 
     feature_reader = {}
     feature_reader["features"] = FeatureReader(data)
@@ -825,7 +848,7 @@ def multi_batch_sequence(stop_event,
     """
     # Read the comment in batch_random
     rd = random.Random(os.urandom(4))
-    rd.jumpahead(seed)
+    #rd.jumpahead(seed)
 
     feature_reader = {}
     feature_reader["features"] = FeatureReader(data)
@@ -886,7 +909,7 @@ class KaldiMultiDataSeqQueue(KaldiDataSeqQueue):
             self.feature_list += self.spk2features[spk]
         if shuffle:
             random.shuffle(self.feature_list)
-        num_sub_features = len(self.feature_list) / num_parallel
+        num_sub_features = int(len(self.feature_list) / num_parallel)
         for i in range(num_parallel):
             if i == num_parallel - 1:
                 self.sub_feature_list.append(self.feature_list[i * num_sub_features:])
@@ -955,7 +978,7 @@ def phone_batch_random(stop_event,
     # The re-seed is necessary if numpy.random is used
     # You can use os.urandom to generate the `random` seed.
     rd = random.Random(os.urandom(4))
-    rd.jumpahead(seed)
+    #rd.jumpahead(seed)
     num_classes = len(phone_class)
     feature_reader = FeatureReader(data)
     speakers = list(spk2features.keys())
@@ -964,7 +987,7 @@ def phone_batch_random(stop_event,
             "[Warning] The number of available speakers are less than the required speaker. Some speakers will be duplicated.")
         speakers = speakers * (int(num_speakers / num_total_speakers) + 1)
 
-    total_num_frames = np.sum(spk2num_frames.values())
+    total_num_frames = np.sum(list(spk2num_frames.values()))
     spk_sample_region = []
     current_region = 0
     for spk in speakers:
@@ -1204,7 +1227,7 @@ def phone_batch_sequence(stop_event,
     """
     # Read the comment in batch_random
     rd = random.Random(os.urandom(4))
-    rd.jumpahead(seed)
+    #rd.jumpahead(seed)
     num_classes = len(phone_class)
     feature_reader = FeatureReader(data)
     num_batches = int(len(feature_list) / batch_size)
@@ -1279,7 +1302,7 @@ class KaldiPhoneDataSeqQueue(object):
         if shuffle:
             random.shuffle(self.feature_list)
         # Split the features to N sub-list. The lists are used in each process.
-        num_sub_features = len(self.feature_list) / num_parallel
+        num_sub_features = int(len(self.feature_list) / num_parallel)
         for i in range(num_parallel):
             if i == num_parallel - 1:
                 self.sub_feature_list.append(self.feature_list[i * num_sub_features:])

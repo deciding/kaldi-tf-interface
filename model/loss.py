@@ -1124,7 +1124,9 @@ if __name__ == "__main__":
     params.dict["mhe_start_step"] = 0
     params.dict["global_step"] = 1000
 
-    from model.test_utils import compute_amsoftmax, compute_ring_loss, compute_mhe, compute_arcsoftmax
+    #from model.test_utils import compute_amsoftmax, compute_ring_loss
+    from model.test_utils import compute_mhe, compute_arcsoftmax
+
     w = tf.get_variable("auxiliary_loss/output/kernel", [num_dim, num_labels], dtype=tf.float32,
                         initializer=tf.contrib.layers.xavier_initializer())
     loss, endpoints = aux_loss_func(embeddings, labels, num_labels, params)

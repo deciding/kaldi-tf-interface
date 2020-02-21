@@ -1475,7 +1475,7 @@ if __name__ == "__main__":
         for line in f.readlines():
             utt, scp = line.strip().split(" ")
             feats_scp.append(scp)
-    import random
+    #import random
     import time
     ts = time.time()
     time1 = 0

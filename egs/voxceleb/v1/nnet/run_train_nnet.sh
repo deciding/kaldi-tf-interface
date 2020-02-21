@@ -4,6 +4,7 @@ cmd="run.pl"
 continue_training=false
 env=tf_gpu
 num_gpus=1
+start_gpu=0
 
 echo "$0 $@"
 
@@ -35,6 +36,12 @@ if [ ! -z $num_gpus_tmp ]; then
   num_gpus=$num_gpus_tmp
   echo "Use $num_gpus GPUs to train the model"
   cmdopts="$cmdopts -n $num_gpus"
+fi
+start_gpu_tmp=`grep 'start_gpu' $config | awk -F '[:,]' '{print $2}'`
+start_gpu_tmp="$(echo -e "${start_gpu_tmp}" | tr -d '[:space:]')"
+if [ ! -z $start_gpu_tmp ]; then
+  start_gpu=$start_gpu_tmp
+  echo "Use $start_gpu as start_gpu"
 fi
 
 # add the library to the python path.
@@ -71,10 +78,15 @@ fi
 # Activate the gpu virtualenv
 # The tensorflow is installed using pip (virtualenv). Modify the code if you activate TF by other ways.
 # Limit the GPU number to what we want.
-source $TF_ENV/$env/bin/activate
+#source $TF_ENV/$env/bin/activate
 
-$cmd $nnetdir/log/train_nnet.log \
-  utils/parallel/limit_num_gpus.sh --num-gpus $num_gpus python nnet/lib/train.py $cmdopts --config $config $train $train_spklist $valid $valid_spklist $nnetdir
-deactivate
+#$cmd $nnetdir/log/train_nnet.log \
+#  utils/parallel/limit_num_gpus.sh --num-gpus $num_gpus python nnet/lib/train.py $cmdopts --config $config $train $train_spklist $valid $valid_spklist $nnetdir
+
+$cmd /dev/stdout \
+  utils/parallel/limit_num_gpus.sh --num-gpus $num_gpus --start-gpu $start_gpu python nnet/lib/train.py $cmdopts --config $config $train $train_spklist $valid $valid_spklist $nnetdir | \
+  tee $nnetdir/log/train_nnet.log 
+echo $nnetdir/log/train_nnet.log 
+#deactivate
 
 exit 0

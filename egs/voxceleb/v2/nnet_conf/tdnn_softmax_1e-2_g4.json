@@ -1,5 +1,6 @@
 {
   "num_gpus": 4,
+  "start_gpu": 0,
 
   "seed": 0,
   "network_type": "tdnn",
@@ -18,7 +19,7 @@
   "batchnorm_momentum": 0.99,
 
   "num_epochs": 200,
-  "num_steps_per_epoch": 5000,
+  "num_steps_per_epoch": 10000,
   "reduce_lr_epochs": 4,
   "show_training_progress": 500,
   "keep_checkpoint_max": 10,

@@ -1,8 +1,8 @@
 import argparse
 import os
-import sys
+#import sys
 from misc.utils import get_checkpoint
-from misc.utils import Params
+#from misc.utils import Params
 import tensorflow as tf
 
 if __name__ == '__main__':

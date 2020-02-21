@@ -16,7 +16,8 @@ from model.loss import semihard_triplet_loss, angular_triplet_loss, e2e_valid_lo
 from dataset.data_loader import KaldiDataRandomQueue, KaldiDataSeqQueue, DataOutOfRange
 from misc.utils import substring_in_list, activation_summaries
 from six.moves import range
-from model.mgpu_tools import assign_to_device, average_gradients, create_device_setter, local_device_setter
+#from model.mgpu_tools import assign_to_device, average_gradients, create_device_setter
+from model.mgpu_tools import local_device_setter
 
 
 def get_semi_orthonormal(mat):
@@ -543,7 +544,7 @@ class Trainer(object):
         return gradvars
 
     def make_semi_orthonormal(self):
-        with tf.name_scope('semi_orthonormal') as scope:
+        with tf.name_scope('semi_orthonormal'):
             constrained_semi_ops = []
             variables = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES)
             update_variables = []
@@ -1131,7 +1132,7 @@ class TrainerMGPU(Trainer):
             return
 
         batch_size = self.params.num_speakers_per_batch * self.params.num_segments_per_speaker
-        batch_size_per_gpu = batch_size / self.num_gpus
+        batch_size_per_gpu = int(batch_size / self.num_gpus)
 
         # For training and validation, the network is built for multi-gpu
         if not self.is_built:

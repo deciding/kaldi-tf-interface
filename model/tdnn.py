@@ -1,6 +1,7 @@
 import tensorflow as tf
 import numpy as np
-from model.pooling import general_pooling, phone_pooling, sep_phone_pooling, sep_phone_pooling_noglobal, phone_pooling_noglobal
+from model.pooling import general_pooling
+#from model.pooling import phone_pooling, sep_phone_pooling, sep_phone_pooling_noglobal, phone_pooling_noglobal # where are these models?
 from model.common import prelu, shape_list
 from collections import OrderedDict
 from six.moves import range

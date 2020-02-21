@@ -53,10 +53,10 @@ if [ $stage -le 0 ]; then
   echo "$0: embedding from node $node"
 
   # Set the checkpoint.
-  source $TF_ENV/$env/bin/activate
+  #source $TF_ENV/$env/bin/activate
   export PYTHONPATH=$TF_KALDI_ROOT:$PYTHONPATH
   python nnet/lib/make_checkpoint.py --checkpoint $checkpoint "$nnetdir"
-  deactivate
+  #deactivate
 
   if $use_gpu; then
     echo "Using CPU to do inference is a better choice."

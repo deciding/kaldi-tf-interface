@@ -2,10 +2,12 @@ import argparse
 import numpy as np
 import os
 import sys
-import numpy, scipy, sklearn
+import numpy
+#import scipy, sklearn
 from model.trainer import Trainer
 from misc.utils import Params
-from dataset.kaldi_io import FeatureReader, open_or_fd, read_mat_ark, write_vec_flt
+from dataset.kaldi_io import open_or_fd, read_mat_ark, write_vec_flt
+#from dataset.kaldi_io import FeatureReader
 from six.moves import range
 
 parser = argparse.ArgumentParser()

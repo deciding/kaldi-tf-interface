@@ -2,7 +2,8 @@ import os
 import argparse
 import random
 import sys
-import numpy, scipy, sklearn
+import numpy
+#import scipy, sklearn
 import tensorflow as tf
 import numpy as np
 from misc.utils import ValidLoss, load_lr, load_valid_loss, save_codes_and_config, compute_cos_pairwise_eer
@@ -37,6 +38,7 @@ if __name__ == '__main__':
     random.seed(params.seed)
     np.random.seed(params.seed)
 
+    # get start epoch
     if args.cont:
         # If we continue training, we can figure out how much steps the model has been trained,
         # using the index of the checkpoint
@@ -53,6 +55,8 @@ if __name__ == '__main__':
 
     learning_rate = params.learning_rate
     learning_rate_array = []
+    # the folder called 0.004
+    # we use learning_rate file
     if os.path.isfile(str(learning_rate)):
         with open(str(learning_rate), "r") as f:
             for line in f.readlines():
@@ -77,6 +81,7 @@ if __name__ == '__main__':
         else:
             learning_rate_array = [float(learning_rate)] * (start_epoch + 1)
 
+    #feature_dim, num_speakers
     dim = FeatureReader(args.train_dir).get_dim()
     if "selected_dim" in params.dict:
         dim = params.selected_dim
@@ -137,7 +142,7 @@ if __name__ == '__main__':
                         # If the valid loss in the next epoch still does not reduce, the learning rate will keep reducing.
                         tf.logging.info("After epoch %d, no improvement. Reduce the learning rate to %.8f" % (
                                         min_valid_loss.min_loss_epoch, new_learning_rate))
-                        min_valid_loss.min_loss_epoch += 2
+                        min_valid_loss.min_loss_epoch += 2 #next next still not improvement
                     else:
                         tf.logging.info(
                             "Valid loss has no improvement. But the training epoch is still less than %d. Keep the learning rate" % params.lr_start_decay_epoch)

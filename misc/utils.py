@@ -84,6 +84,7 @@ def save_codes_and_config(cont, model, config):
         # Save the codes in the model directory so that it is more convenient to extract the embeddings.
         # The codes would be changed when we extract the embeddings, making the network loading impossible.
         # When we want to extract the embeddings, we should use the code in `model/codes/...`
+        # Move codes, nnet lib to .backup if nnet exists
         if os.path.isdir(os.path.join(model, "nnet")):
             # Backup the codes and configuration in .backup. Keep the model unchanged.
             tf.logging.info("Save backup to %s" % os.path.join(model, ".backup"))
@@ -101,6 +102,7 @@ def save_codes_and_config(cont, model, config):
                 shutil.move(os.path.join(model, "lib"), os.path.join(model, ".backup/"))
 
         # `model/codes` is used to save the codes and `model/nnet` is used to save the model and configuration
+        # remove codes and lib if nnet not exist
         if os.path.isdir(os.path.join(model, "codes")):
             shutil.rmtree(os.path.join(model, "codes"))
         if os.path.isdir(os.path.join(model, "lib")):
@@ -108,6 +110,7 @@ def save_codes_and_config(cont, model, config):
         os.makedirs(os.path.join(model, "codes"))
 
         # We need to set the home directory of the tf-kaldi-speaker (TF_KALDI_ROOT).
+        # copy codes{dataset/model/misc}, get lib, make model save dir nnet, and copy the config to it
         if not os.environ.get('TF_KALDI_ROOT'):
             tf.logging.error("TF_KALDI_ROOT should be set before training. Refer to path.sh to set the value manually. ")
             quit()
@@ -318,14 +321,14 @@ def compute_cos_pairwise_eer(embeddings, labels, max_num_embeddings=1000):
     num_embeddings = embeddings.shape[0]
     if num_embeddings > max_num_embeddings:
         # Downsample the embeddings and labels
-        step = num_embeddings / max_num_embeddings
+        step = int(num_embeddings / max_num_embeddings)
         embeddings = embeddings[range(0, num_embeddings, step), :]
         labels = labels[range(0, num_embeddings, step)]
         num_embeddings = embeddings.shape[0]
 
     score_mat = np.dot(embeddings, np.transpose(embeddings))
-    scores = np.zeros((num_embeddings * (num_embeddings - 1) / 2))
-    keys = np.zeros((num_embeddings * (num_embeddings - 1) / 2))
+    scores = np.zeros((num_embeddings * (num_embeddings - 1) // 2))
+    keys = np.zeros((num_embeddings * (num_embeddings - 1) // 2))
     index = 0
     for i in range(num_embeddings - 1):
         for j in range(i + 1, num_embeddings):
@@ -422,9 +425,9 @@ def compute_kaldi_restricted_attention(endpoints, params):
     num_heads = params.sann_num_heads
     context_size = params.sann_restricted_context_size
     half_context_size = int((context_size - 1) / 2)
-    value = np.transpose(np.reshape(value, (batch_size, length, num_heads, total_dim/num_heads)), [0, 2, 1, 3])
-    key = np.transpose(np.reshape(key, (batch_size, length, num_heads, key.shape[-1]/num_heads)), [0, 2, 1, 3])
-    query = np.transpose(np.reshape(query, (batch_size, length, num_heads, query.shape[-1]/num_heads)), [0, 2, 1, 3])
+    value = np.transpose(np.reshape(value, (batch_size, length, num_heads, total_dim//num_heads)), [0, 2, 1, 3])
+    key = np.transpose(np.reshape(key, (batch_size, length, num_heads, key.shape[-1]//num_heads)), [0, 2, 1, 3])
+    query = np.transpose(np.reshape(query, (batch_size, length, num_heads, query.shape[-1]//num_heads)), [0, 2, 1, 3])
     query /= np.sqrt(key.shape[-1])
     key_dim = key.shape[-1]
     value_dim = value.shape[-1] + context_size
