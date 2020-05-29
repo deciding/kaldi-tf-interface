@@ -1,5 +1,5 @@
 {
-  "start_gpu": 8,
+  "start_gpu": 0,
 
   "seed": 0,
   "network_type": "tdnn",

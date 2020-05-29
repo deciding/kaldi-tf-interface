@@ -2,6 +2,7 @@
 
 nj=32
 use_gpu=false
+start_gpu=0
 cmd="run.pl"
 min_chunk_size=50
 chunk_size=10000
@@ -20,6 +21,7 @@ if [ $# != 3 ]; then
   echo "Usage: $0 [options] <nnet-dir> <data> <embeddings-dir>"
   echo "Options:"
   echo "  --use-gpu <false>"
+  echo "  --start_gpu 0"
   echo "  --nj <32>"
   echo "  --min-chunk-size <50>"
   echo "  --chunk-size <10000>"
@@ -60,10 +62,11 @@ if [ $stage -le 0 ]; then
 
   if $use_gpu; then
     echo "Using CPU to do inference is a better choice."
-    exit 1
-#    $cmd JOB=1:$nj ${dir}/log/extract.JOB.log \
-#      nnet/wrap/extract_wrapper.sh --gpuid JOB --env $env --min-chunk-size $min_chunk_size --chunk-size $chunk_size --normalize $normalize \
-#        "$nnetdir" "$feat" "ark:| copy-vector ark:- ark,scp:${dir}/xvector.JOB.ark,${dir}/xvector.JOB.scp"
+    #exit 1
+    # start gpu must be 0, since the data split algos all depend on 0 based
+    $cmd JOB=1:$nj ${dir}/log/extract.JOB.log \
+      nnet/wrap/extract_wrapper.sh --start_gpu $start_gpu --gpuid JOB --env $env --min-chunk-size $min_chunk_size --chunk-size $chunk_size --normalize $normalize \
+        "$nnetdir" "$feat" "ark:| copy-vector ark:- ark,scp:${dir}/xvector.JOB.ark,${dir}/xvector.JOB.scp"
   else
     $cmd JOB=1:$nj ${dir}/log/extract.JOB.log \
       nnet/wrap/extract_wrapper.sh --gpuid -1 --env $env --min-chunk-size $min_chunk_size --chunk-size $chunk_size \
@@ -85,7 +88,7 @@ if [ $stage -le 2 ]; then
     $cmd $dir/log/speaker_mean.log \
       ivector-normalize-length --scaleup=false scp:$dir/xvector.scp ark:- \| \
       ivector-mean ark:$data/spk2utt ark:- ark:- ark,t:$dir/num_utts.ark \| \
-      ivector-normalize-length --scaleup=false ark:- ark,scp:$dir/spk_xvector.ark,$dir/spk_xvector.scp || exit 1
+      ivector-normalize-length --scaleup=false ark:- ark,scp:$dir/spk_xvector.ark,$dir/spk_xvector.scp || exit
   else
     $cmd $dir/log/speaker_mean.log \
       ivector-mean ark:$data/spk2utt scp:$dir/xvector.scp \

@@ -25,9 +25,9 @@ parser.add_argument("wspecifier", type=str, help="Kaldi output wspecifier (or ar
 
 args = parser.parse_args()
 
-if args.gpu == -1:
-    # Disable GPU
-    os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+#if args.gpu == -1:
+#    # Disable GPU
+#    os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
 # In the GPU situation, it is difficult to know how to specify the GPU id.
 # If the program is launched locally, you can set CUDA_VISIBLE_DEVICES to the id.
@@ -55,7 +55,7 @@ if __name__ == '__main__':
 
     with open(os.path.join(nnet_dir, "feature_dim"), "r") as f:
         dim = int(f.readline().strip())
-    trainer = Trainer(params, args.model_dir, dim, single_cpu=True)
+    trainer = Trainer(params, args.model_dir, dim, single_cpu=args.gpu<0)
     trainer.build("predict")
 
     if args.rspecifier.rsplit(".", 1)[1] == "scp":
@@ -73,8 +73,8 @@ if __name__ == '__main__':
             num_chunks = int(np.ceil(float(feature.shape[0] - args.chunk_size) / (args.chunk_size / 2))) + 1
             tf.logging.info("[INFO] Key %s length %d > %d, split to %d segments." % (key, feature.shape[0], args.chunk_size, num_chunks))
             for i in range(num_chunks):
-                start = i * (args.chunk_size / 2)
-                this_chunk_size = args.chunk_size if feature.shape[0] - start > args.chunk_size else feature.shape[0] - start
+                start = int(i * (args.chunk_size / 2))
+                this_chunk_size = int(args.chunk_size if feature.shape[0] - start > args.chunk_size else feature.shape[0] - start)
                 feature_length.append(this_chunk_size)
                 feature_array.append(feature[start:start+this_chunk_size])
 

@@ -83,7 +83,8 @@ fi
 #$cmd $nnetdir/log/train_nnet.log \
 #  utils/parallel/limit_num_gpus.sh --num-gpus $num_gpus python nnet/lib/train.py $cmdopts --config $config $train $train_spklist $valid $valid_spklist $nnetdir
 
-$cmd /dev/stdout \
+echo python nnet/lib/train.py $cmdopts --config $config $train $train_spklist $valid $valid_spklist $nnetdir
+#$cmd /dev/stdout \
   utils/parallel/limit_num_gpus.sh --num-gpus $num_gpus --start-gpu $start_gpu python nnet/lib/train.py $cmdopts --config $config $train $train_spklist $valid $valid_spklist $nnetdir | \
   tee $nnetdir/log/train_nnet.log 
 echo $nnetdir/log/train_nnet.log 

@@ -2,6 +2,7 @@
 
 env=
 gpuid=-1
+start_gpu=0
 min_chunk_size=25
 chunk_size=10000
 normalize=false
@@ -14,6 +15,7 @@ if [ $# != 3 ]; then
   echo "Usage: $0 [options] <nnet-dir> <data> <embeddings-dir>"
   echo "Options:"
   echo "  --gpuid <-1>"
+  echo "  --start_gpu 0"
   echo "  --min-chunk-size <25>"
   echo "  --chunk-size <10000>"
   echo "  --normalize <false>"
@@ -36,6 +38,9 @@ fi
 
 export PYTHONPATH=`pwd`/../../:$PYTHONPATH
 
-python nnet/lib/extract.py --gpu $gpuid --node $node --min-chunk-size $min_chunk_size --chunk-size $chunk_size $cmdopt_norm\
+# -1 since JOB(gpuid) is 1 based 
+echo python nnet/lib/extract.py --gpu $gpuid --node $node --min-chunk-size $min_chunk_size --chunk-size $chunk_size $cmdopt_norm "\"$nnetdir\"" "\"$feat\"" "\"$dir\""
+
+utils/parallel/limit_num_gpus.sh --num-gpus 1 --start-gpu $(( $start_gpu + $gpuid - 1 )) python nnet/lib/extract.py --gpu $gpuid --node $node --min-chunk-size $min_chunk_size --chunk-size $chunk_size $cmdopt_norm\
          "$nnetdir" "$feat" "$dir"
 #deactivate

@@ -122,6 +122,7 @@ if __name__ == '__main__':
     for epoch in range(start_epoch, params.num_epochs):
         tf.logging.info("Epoch %d, learning rate: %f" % (epoch, learning_rate_array[epoch]))
         trainer.train(args.train_dir, args.train_spklist, learning_rate_array[epoch])
+        import pdb;pdb.set_trace()
         valid_loss, valid_embeddings, valid_labels = trainer.valid(args.valid_dir, args.valid_spklist,
                                                                    batch_type=params.batch_type,
                                                                    output_embeddings=True)

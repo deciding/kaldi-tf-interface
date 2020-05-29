@@ -16,7 +16,8 @@
 . ./path.sh
 set -e
 
-root=/home/heliang05/liuyi/voxceleb.official
+#root=/home/heliang05/liuyi/voxceleb.official
+root=$PWD
 data=$root/data
 exp=$root/exp
 mfccdir=$root/mfcc
@@ -25,13 +26,22 @@ vaddir=$root/mfcc
 stage=7
 
 # The kaldi voxceleb egs directory
-kaldi_voxceleb=/home/heliang05/liuyi/software/kaldi_gpu/egs/voxceleb
+#kaldi_voxceleb=/home/heliang05/liuyi/software/kaldi_gpu/egs/voxceleb
+#
+#voxceleb1_trials=$data/voxceleb_test/trials
+#voxceleb1_root=/home/heliang05/liuyi/data/voxceleb/voxceleb1
+#voxceleb2_root=/home/heliang05/liuyi/data/voxceleb/voxceleb2
+#musan_root=/home/heliang05/liuyi/data/musan
+#rirs_root=/home/heliang05/liuyi/data/RIRS_NOISES
+
+kaldi_voxceleb=/home/zining/workspace/kaldi-original/egs/voxceleb
+voxceleb1_root=/home/zining/workspace/datasets/raw_vox/vox1/
+voxceleb2_root=/home/zining/workspace/datasets/raw_vox/vox2/
+#nnet_dir=exp/xvector_nnet_1a
+musan_root=/home/zining/workspace/datasets/musan
+rirs_root=$kaldi_voxceleb/v2/RIRS_NOISES
 
 voxceleb1_trials=$data/voxceleb_test/trials
-voxceleb1_root=/home/heliang05/liuyi/data/voxceleb/voxceleb1
-voxceleb2_root=/home/heliang05/liuyi/data/voxceleb/voxceleb2
-musan_root=/home/heliang05/liuyi/data/musan
-rirs_root=/home/heliang05/liuyi/data/RIRS_NOISES
 
 if [ $stage -le -1 ]; then
     # link the directories
@@ -48,8 +58,8 @@ fi
 
 if [ $stage -le 0 ]; then
   local/make_voxceleb2.pl $voxceleb2_root dev $data/voxceleb2_train
-  local/make_voxceleb1.pl $voxceleb1_root $data
-  exit 1
+  local/make_voxceleb1.pl $voxceleb1_root $data/voxceleb1_test_v1
+  exit
 fi
 
 if [ $stage -le 1 ]; then
@@ -93,7 +103,8 @@ if [ $stage -le 2 ]; then
 
   # Prepare the MUSAN corpus, which consists of music, speech, and noise
   # suitable for augmentation.
-  local/make_musan.sh $musan_root $data
+  #local/make_musan.sh $musan_root $data
+  steps/data/make_musan.sh $musan_root $data
 
   # Get the duration of the MUSAN recordings.  This will be used by the
   # script augment_data_dir.py.
@@ -111,7 +122,7 @@ if [ $stage -le 2 ]; then
 
   # Combine reverb, noise, music, and babble into one directory.
   utils/combine_data.sh $data/voxceleb_train_aug $data/voxceleb_train_reverb $data/voxceleb_train_noise $data/voxceleb_train_music $data/voxceleb_train_babble
-  exit 1
+  exit
 fi
 
 if [ $stage -le 3 ]; then
@@ -128,7 +139,7 @@ if [ $stage -le 3 ]; then
   # Combine the clean and augmented VoxCeleb2 list.  This is now roughly
   # double the size of the original clean list.
   utils/combine_data.sh $data/voxceleb_train_combined $data/voxceleb_train_aug_1m $data/voxceleb_train
-  exit 1
+  exit
 fi
 
 if [ $stage -le 4 ]; then
@@ -136,7 +147,7 @@ if [ $stage -le 4 ]; then
     $data/voxceleb_train_combined $data/voxceleb_train_combined_no_sil $exp/voxceleb_train_combined_no_sil
   utils/fix_data_dir.sh $data/voxceleb_train_combined_no_sil
   cp -r $data/voxceleb_train_combined_no_sil $data/voxceleb_train_combined_no_sil.bak
-  exit 1
+  exit
 fi
 
 if [ $stage -le 5 ]; then
@@ -162,7 +173,7 @@ if [ $stage -le 5 ]; then
 
   # Now we're ready to create training examples.
   utils/fix_data_dir.sh $data/voxceleb_train_combined_no_sil
-  exit 1
+  exit
 fi
 
 if [ $stage -le 6 ]; then
@@ -194,17 +205,80 @@ if [ $stage -le 6 ]; then
   utils/fix_data_dir.sh $data/voxceleb_train_combined_no_sil/train
 
   awk -v id=0 '{print $1, id++}' $data/voxceleb_train_combined_no_sil/train/spk2utt > $data/voxceleb_train_combined_no_sil/train/spklist
-  exit 1
+  exit
 fi
 
 if [ $stage -le 7 ]; then
+  echo Training...
   # Training a softmax network
-  nnetdir=$exp/xvector_aug_nnet_tdnn_softmax_1e-2
-  nnet/run_train_nnet.sh --cmd "$cuda_cmd" --env tf_gpu --continue-training false nnet_conf/tdnn_softmax_1e-2.json \
+  #nnetdir=$exp/xvector_aug_nnet_tdnn_aam_softmax_1e-2
+  nnetdir=$exp/test
+  nnet/run_train_nnet.sh --cmd "$cuda_cmd" --env tf_gpu --continue-training false nnet_conf/tdnn_aam_softmax_1e-2.json \
     $data/voxceleb_train_combined_no_sil/train $data/voxceleb_train_combined_no_sil/train/spklist \
     $data/voxceleb_train_combined_no_sil/valid $data/voxceleb_train_combined_no_sil/train/spklist \
     $nnetdir
 
-exit 1
+exit
 fi
 
+nnetdir=$exp/
+modeldir=$nnetdir/xvector_aug_nnet_tdnn_aam_softmax_1e-2
+checkpoint='last'
+
+if [ $stage -le 9 ]; then
+    echo Stage9
+  # Extract the embeddings
+  nnet/run_extract_embeddings.sh --cmd "$train_cmd" --nj 40 --use-gpu false --checkpoint $checkpoint --stage 0 \
+    --chunk-size 10000 --normalize false --node "tdnn6_dense" \
+    $modeldir $data/voxceleb_train $nnetdir/xvectors_voxceleb_train
+
+  nnet/run_extract_embeddings.sh --cmd "$train_cmd" --nj 40 --use-gpu false --checkpoint $checkpoint --stage 0 \
+    --chunk-size 10000 --normalize false --node "tdnn6_dense" \
+    $modeldir $data/voxceleb_test $nnetdir/xvectors_voxceleb_test
+fi
+
+if [ $stage -le 10 ]; then
+  echo Stage10
+  # Compute the mean vector for centering the evaluation xvectors.
+  $train_cmd $nnetdir/xvectors_voxceleb_train/log/compute_mean.log \
+    ivector-mean scp:$nnetdir/xvectors_voxceleb_train/xvector.scp \
+    $nnetdir/xvectors_voxceleb_train/mean.vec || exit 1;
+
+  # This script uses LDA to decrease the dimensionality prior to PLDA.
+  lda_dim=200
+  $train_cmd $nnetdir/xvectors_voxceleb_train/log/lda.log \
+    ivector-compute-lda --total-covariance-factor=0.0 --dim=$lda_dim \
+    "ark:ivector-subtract-global-mean scp:$nnetdir/xvectors_voxceleb_train/xvector.scp ark:- |" \
+    ark:$data/voxceleb_train/utt2spk $nnetdir/xvectors_voxceleb_train/transform.mat || exit 1;
+
+  # Train the PLDA model.
+  $train_cmd $nnetdir/xvectors_voxceleb_train/log/plda.log \
+    ivector-compute-plda ark:$data/voxceleb_train/spk2utt \
+    "ark:ivector-subtract-global-mean scp:$nnetdir/xvectors_voxceleb_train/xvector.scp ark:- | transform-vec $nnetdir/xvectors_voxceleb_train/transform.mat ark:- ark:- | ivector-normalize-length ark:-  ark:- |" \
+    $nnetdir/xvectors_voxceleb_train/plda || exit 1;
+fi
+
+if [ $stage -le 11 ]; then
+  echo Stage11
+  $train_cmd $nnetdir/scores/log/voxceleb_test_scoring.log \
+    ivector-plda-scoring --normalize-length=true \
+    "ivector-copy-plda --smoothing=0.0 $nnetdir/xvectors_voxceleb_train/plda - |" \
+    "ark:ivector-subtract-global-mean $nnetdir/xvectors_voxceleb_train/mean.vec scp:$nnetdir/xvectors_voxceleb_test/xvector.scp ark:- | transform-vec $nnetdir/xvectors_voxceleb_train/transform.mat ark:- ark:- | ivector-normalize-length ark:- ark:- |" \
+    "ark:ivector-subtract-global-mean $nnetdir/xvectors_voxceleb_train/mean.vec scp:$nnetdir/xvectors_voxceleb_test/xvector.scp ark:- | transform-vec $nnetdir/xvectors_voxceleb_train/transform.mat ark:- ark:- | ivector-normalize-length ark:- ark:- |" \
+    "cat '$voxceleb1_trials' | cut -d\  --fields=1,2 |" $nnetdir/scores/scores_voxceleb_test.plda || exit 1;
+
+  eer=`compute-eer <(local/prepare_for_eer.py $voxceleb1_trials $nnetdir/scores/scores_voxceleb_test.plda) 2> /dev/null`
+  mindcf1=`sid/compute_min_dcf.py --c-miss 10 --p-target 0.01 $nnetdir/scores/scores_voxceleb_test.plda $voxceleb1_trials 2> /dev/null`
+  mindcf2=`sid/compute_min_dcf.py --p-target 0.001 $nnetdir/scores/scores_voxceleb_test.plda $voxceleb1_trials 2> /dev/null`
+  echo "EER: $eer%"
+  echo "minDCF(p-target=0.01): $mindcf1"
+  echo "minDCF(p-target=0.001): $mindcf2"
+
+  ## Use DETware provided by NIST. It requires MATLAB to compute the DET and DCF.
+  #paste -d ' ' $voxceleb1_trials $nnetdir/scores/scores_voxceleb_test.plda | grep ' target ' | awk '{print $NF}' > $nnetdir/scores/scores_voxceleb_test.plda.target
+  #paste -d ' ' $voxceleb1_trials $nnetdir/scores/scores_voxceleb_test.plda | grep ' nontarget ' | awk '{print $NF}' > $nnetdir/scores/scores_voxceleb_test.plda.nontarget
+  #comm=`echo "addpath('../../../misc/DETware_v2.1');Get_DCF('$nnetdir/scores/scores_voxceleb_test.plda.target', '$nnetdir/scores/scores_voxceleb_test.plda.nontarget', '$nnetdir/scores/scores_voxceleb_test.plda.result');"`
+  #echo "$comm"| matlab -nodesktop > /dev/null
+  #tail -n 1 $nnetdir/scores/scores_voxceleb_test.plda.result
+  #exit 1
+fi

@@ -412,6 +412,7 @@ class KaldiDataRandomQueue(object):
             tf.logging.info("The training examples are sampled with probability.")
 
         # We process the data directory and fetch speaker information.
+        # index2feats, feat2index, spk2index
         self.spk2features, self.features2spk, spk2index = get_speaker_info(data_dir, spklist)
 
         # We also load #frames for each speaker and #frames for each utt
@@ -461,6 +462,7 @@ class KaldiDataRandomQueue(object):
     def start(self):
         """Start processes to load features
         """
+        #import pdb;pdb.set_trace()
         #batch_random(self.stop_event,
         #                                                     self.queue,
         #                                                     self.data,
